@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+.punti-gradient {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgba(255,79,163,.25), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(255,135,194,.22), transparent 50%),
+    linear-gradient(to bottom, #FFF6FB, #FFF6FB);
+}
+
+body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+
+.punti-card {
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(255, 79, 163, 0.14);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.punti-btn-primary {
+  border-radius: 0.75rem;
+  background: #ff4fa3;
+  color: #fff;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px rgba(255, 79, 163, 0.14);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.punti-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(255, 79, 163, 0.2);
+}
+.punti-btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255, 79, 163, 0.2), 0 10px 30px rgba(255, 79, 163, 0.14);
+}
+
+.punti-btn-ghost {
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.7);
+  color: #1b1b1f;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+.punti-btn-ghost:hover {
+  background: #fff;
+}
+.punti-btn-ghost:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255, 79, 163, 0.2);
+}
+
+.punti-chip {
+  border-radius: 999px;
+  background: rgba(255, 79, 163, 0.1);
+  color: #ff4fa3;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.punti-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #1b1b1f;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+.punti-input:focus {
+  border-color: rgba(255, 79, 163, 0.6);
+  box-shadow: 0 0 0 2px rgba(255, 79, 163, 0.35);
+}
+
+/* Flashcard 3D flip */
+.flip-scene {
+  perspective: 1200px;
+}
+
+.flip-card {
+  transform-style: preserve-3d;
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1);
+}
+
+.flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+
+
+
+
+
+
