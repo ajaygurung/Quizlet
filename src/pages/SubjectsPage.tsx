@@ -1,26 +1,30 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Store } from "../lib/store";
+import { Store, type Subject } from "../lib/store";
 
 export default function SubjectsPage() {
   const nav = useNavigate();
   const [name, setName] = useState("");
   const [tick, setTick] = useState(0);
-  const subjects = useMemo(() => Store.getSubjects(), [tick]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
 
-  const addSubject = () => {
+  useEffect(() => {
+    Store.getSubjects().then(setSubjects).catch(console.error);
+  }, [tick]);
+
+  const addSubject = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    Store.addSubject(trimmed);
+    await Store.addSubject(trimmed);
+    setTick(t => t + 1);
     setName("");
-    setTick((t) => t + 1);
   };
-  const deleteSubject = (subjectId: string, subjectName: string) => {
+  const deleteSubject = async (subjectId: string, subjectName: string) => {
     const confirmed = window.confirm(
       `Delete "${subjectName}"? This will remove all lectures and flashcards.`
     );
     if (!confirmed) return;
-    Store.deleteSubject(subjectId);
+    await Store.deleteSubject(subjectId);
     setTick((t) => t + 1);
   };
 
@@ -36,8 +40,8 @@ export default function SubjectsPage() {
             Create a subject, then add lectures inside it.
           </p>
         </div>
-
       </div>
+
       <div style={{ height: "16px" }} />
 
       {/* compact add bar */}

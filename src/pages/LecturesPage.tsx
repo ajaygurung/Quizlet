@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Store } from "../lib/store";
+import { Store, type Lecture } from "../lib/store";
 import { BackLink } from "../ui";
 
 export default function LecturesPage() {
@@ -11,21 +11,46 @@ export default function LecturesPage() {
   const [name, setName] = useState("");
   const [tick, setTick] = useState(0);
 
-  const lectures = useMemo(() => Store.getLectures(sid), [sid, tick]);
+  const [lectures, setLectures] = useState<Lecture[]>([]);
+  const [cardCounts, setCardCounts] = useState<Record<string, number>>({});
+  
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!sid) {
+        setLectures([]);
+        setCardCounts({});
+        return;
+      }
+      const nextLectures = await Store.getLectures(sid);
+      if (!active) return;
+      setLectures(nextLectures);
 
-  const addLecture = () => {
+      const counts = await Promise.all(
+        nextLectures.map(async (l) => [l.id, (await Store.getCards(l.id)).length] as const)
+      );
+      if (!active) return;
+      setCardCounts(Object.fromEntries(counts));
+    };
+    load().catch(console.error);
+    return () => {
+      active = false;
+    };
+  }, [sid, tick]);
+
+  const addLecture = async () => {
     const trimmed = name.trim();
-    if (!trimmed) return;
-    Store.addLecture(sid, trimmed);
+    if (!trimmed || !sid) return;
+    await Store.addLecture(sid, trimmed);
     setName("");
     setTick((t) => t + 1);
   };
-  const deleteLecture = (lectureId: string, lectureName: string) => {
+  const deleteLecture = async (lectureId: string, lectureName: string) => {
     const confirmed = window.confirm(
       `Delete "${lectureName}"? This will remove all flashcards.`
     );
     if (!confirmed) return;
-    Store.deleteLecture(lectureId);
+    await Store.deleteLecture(lectureId);
     setTick((t) => t + 1);
   };
 
@@ -95,7 +120,7 @@ export default function LecturesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {lectures.map((l) => {
-            const count = Store.getCards(l.id).length;
+            const count = cardCounts[l.id] ?? 0;
 
             return (
               <div

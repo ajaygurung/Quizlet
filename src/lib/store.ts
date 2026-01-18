@@ -1,96 +1,169 @@
+import { supabase } from "./supabase";
+
 export type Subject = { id: string; name: string };
 export type Lecture = { id: string; subjectId: string; name: string };
 export type Card = { id: string; lectureId: string; question: string; answer: string };
-
-type Db = {
-  subjects: Subject[];
-  lectures: Lecture[];
-  cards: Card[];
-};
-
-const KEY = "study_pwa_db_v1";
-
-function loadDb(): Db {
-  const raw = localStorage.getItem(KEY);
-  if (!raw) return { subjects: [], lectures: [], cards: [] };
-  try {
-    return JSON.parse(raw) as Db;
-  } catch {
-    return { subjects: [], lectures: [], cards: [] };
-  }
-}
-
-function saveDb(db: Db) {
-  localStorage.setItem(KEY, JSON.stringify(db));
-}
 
 export function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
 
+async function requireUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  const uid = data.user?.id;
+  if (!uid) throw new Error("Not signed in");
+  return uid;
+}
+
 export const Store = {
-  // Subjects
-  getSubjects(): Subject[] {
-    return loadDb().subjects;
+  // -------- AUTH --------
+  async signUp(email: string, password: string) {
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
   },
-  addSubject(name: string): Subject {
-    const db = loadDb();
-    const subject = { id: uid("sub"), name: name.trim() };
-    db.subjects.push(subject);
-    saveDb(db);
+
+  async signIn(email: string, password: string) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  },
+
+  async signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  },
+
+  async getSession() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return data.session;
+  },
+
+  // -------- SUBJECTS --------
+  async getSubjects(): Promise<Subject[]> {
+    const user_id = await requireUserId();
+    const { data, error } = await supabase
+      .from("subjects")
+      .select("id,name")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return (data ?? []).map((s) => ({ id: s.id, name: s.name }));
+  },
+
+  async addSubject(name: string): Promise<Subject> {
+    const user_id = await requireUserId();
+    const subject: Subject = { id: uid("sub"), name: name.trim() };
+
+    const { error } = await supabase.from("subjects").insert({
+      id: subject.id,
+      user_id,
+      name: subject.name,
+    });
+
+    if (error) throw error;
     return subject;
   },
-  deleteSubject(subjectId: string) {
-    const db = loadDb();
-    const lectureIds = db.lectures
-      .filter((l) => l.subjectId === subjectId)
-      .map((l) => l.id);
-    const lectureIdSet = new Set(lectureIds);
-    db.subjects = db.subjects.filter((s) => s.id !== subjectId);
-    db.lectures = db.lectures.filter((l) => l.subjectId !== subjectId);
-    if (lectureIdSet.size > 0) {
-      db.cards = db.cards.filter((c) => !lectureIdSet.has(c.lectureId));
-    }
-    saveDb(db);
+
+  async deleteSubject(subjectId: string) {
+    // cascades delete lectures + cards because of FK on delete cascade
+    const user_id = await requireUserId();
+    const { error } = await supabase
+      .from("subjects")
+      .delete()
+      .eq("user_id", user_id)
+      .eq("id", subjectId);
+
+    if (error) throw error;
   },
 
-  // Lectures
-  getLectures(subjectId: string): Lecture[] {
-    return loadDb().lectures.filter((l) => l.subjectId === subjectId);
+  // -------- LECTURES --------
+  async getLectures(subjectId: string): Promise<Lecture[]> {
+    const user_id = await requireUserId();
+    const { data, error } = await supabase
+      .from("lectures")
+      .select("id,subject_id,name")
+      .eq("user_id", user_id)
+      .eq("subject_id", subjectId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return (data ?? []).map((l) => ({
+      id: l.id,
+      subjectId: l.subject_id,
+      name: l.name,
+    }));
   },
-  addLecture(subjectId: string, name: string): Lecture {
-    const db = loadDb();
-    const lecture = { id: uid("lec"), subjectId, name: name.trim() };
-    db.lectures.push(lecture);
-    saveDb(db);
+
+  async addLecture(subjectId: string, name: string): Promise<Lecture> {
+    const user_id = await requireUserId();
+    const lecture: Lecture = { id: uid("lec"), subjectId, name: name.trim() };
+
+    const { error } = await supabase.from("lectures").insert({
+      id: lecture.id,
+      user_id,
+      subject_id: lecture.subjectId,
+      name: lecture.name,
+    });
+
+    if (error) throw error;
     return lecture;
   },
-  deleteLecture(lectureId: string) {
-    const db = loadDb();
-    db.lectures = db.lectures.filter((l) => l.id !== lectureId);
-    db.cards = db.cards.filter((c) => c.lectureId !== lectureId);
-    saveDb(db);
+
+  async deleteLecture(lectureId: string) {
+    const user_id = await requireUserId();
+    const { error } = await supabase
+      .from("lectures")
+      .delete()
+      .eq("user_id", user_id)
+      .eq("id", lectureId);
+
+    if (error) throw error;
   },
 
-  // Cards
-  getCards(lectureId: string): Card[] {
-    return loadDb().cards.filter((c) => c.lectureId === lectureId);
-  },
-  addCards(lectureId: string, cards: Omit<Card, "id" | "lectureId">[]) {
-    const db = loadDb();
-    const newCards: Card[] = cards.map((c) => ({
-      id: uid("card"),
-      lectureId,
+  // -------- CARDS --------
+  async getCards(lectureId: string): Promise<Card[]> {
+    const user_id = await requireUserId();
+    const { data, error } = await supabase
+      .from("cards")
+      .select("id,lecture_id,question,answer")
+      .eq("user_id", user_id)
+      .eq("lecture_id", lectureId)
+      .order("created_at", { ascending: true });
+
+    if (error) throw error;
+    return (data ?? []).map((c) => ({
+      id: c.id,
+      lectureId: c.lecture_id,
       question: c.question,
       answer: c.answer,
     }));
-    db.cards.push(...newCards);
-    saveDb(db);
-    return newCards.length;
   },
-  deleteCard(cardId: string) {
-    const db = loadDb();
-    db.cards = db.cards.filter((c) => c.id !== cardId);
-    saveDb(db);
+
+  async addCards(lectureId: string, cards: Omit<Card, "id" | "lectureId">[]) {
+    const user_id = await requireUserId();
+    const rows = cards.map((c) => ({
+      id: uid("card"),
+      user_id,
+      lecture_id: lectureId,
+      question: c.question,
+      answer: c.answer,
+    }));
+
+    const { error } = await supabase.from("cards").insert(rows);
+    if (error) throw error;
+    return rows.length;
+  },
+
+  async deleteCard(cardId: string) {
+    const user_id = await requireUserId();
+    const { error } = await supabase
+      .from("cards")
+      .delete()
+      .eq("user_id", user_id)
+      .eq("id", cardId);
+
+    if (error) throw error;
   },
 };

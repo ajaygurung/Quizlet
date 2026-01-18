@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Store } from "../lib/store";
+import { Store, type Card } from "../lib/store";
 import { BackLink } from "../ui";
 
 export default function LecturePage() {
@@ -10,11 +10,17 @@ export default function LecturePage() {
 
   const [tick, setTick] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
-  const cards = useMemo(() => Store.getCards(lid), [lid, tick]);
+
+  const [cards, setCards] = useState<Card[]>([]);
+  
+  useEffect(() => {
+    Store.getCards(lid).then(setCards).catch(console.error);
+  }, [lid, tick]);
+
   const cardCount = cards.length;
 
-  const removeCard = (cardId: string) => {
-    Store.deleteCard(cardId);
+  const removeCard = async (cardId: string) => {
+    await Store.deleteCard(cardId);
     setTick((t) => t + 1);
   };
 
@@ -141,7 +147,7 @@ export default function LecturePage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-xs font-semibold text-punti-muted">
-                      Card {i + 1}
+                      {i + 1}
                     </div>
                     <div className="mt-1 text-sm font-semibold text-punti-text">
                       Q: {card.question}

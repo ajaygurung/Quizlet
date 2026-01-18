@@ -40,9 +40,9 @@ export default function ImportFlashcardsPage() {
             className={`punti-btn-primary w-full sm:w-auto ${
               parsed.cards.length === 0 || parsed.errors.length > 0 ? "opacity-50 pointer-events-none" : ""
             }`}
-            onClick={() => {
+            onClick={async () => {
               if (parsed.cards.length === 0 || parsed.errors.length > 0) return;
-              Store.addCards(lid, parsed.cards);
+              await Store.addCards(lid, parsed.cards);
               nav(`/subjects/${sid}/lectures/${lid}`);
             }}
           >

@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Store } from "../lib/store";
+import { Store, type Card } from "../lib/store";
 
 export default function FlashcardsPlayerPage() {
   const nav = useNavigate();
@@ -8,7 +8,11 @@ export default function FlashcardsPlayerPage() {
   const sid = subjectId ?? "";
   const lid = lectureId ?? "";
 
-  const cards = useMemo(() => Store.getCards(lid), [lid]);
+  const [cards, setCards] = useState<Card[]>([]);
+  
+  useEffect(() => {
+    Store.getCards(lid).then(setCards).catch(console.error);
+  }, [lid]);
 
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
