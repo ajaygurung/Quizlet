@@ -117,7 +117,7 @@ export default function FlashcardsPlayerPage() {
               {/* center area */}
               <div className="mt-4 flex h-[calc(100%-44px)] items-center justify-center">
                 <div className="w-full max-w-3xl text-center">
-                  <div className="text-xl sm:text-3xl font-extrabold tracking-tight text-punti-text whitespace-pre-wrap">
+                  <div className="text-xl sm:text-l tracking-tight text-punti-text whitespace-pre-wrap">
                     {current?.question ?? ""}
                   </div>
                 </div>
@@ -137,7 +137,7 @@ export default function FlashcardsPlayerPage() {
               {/* center area */}
               <div className="mt-4 flex h-[calc(100%-44px)] items-center justify-center">
                 <div className="w-full max-w-3xl text-center">
-                  <div className="text-lg sm:text-2xl font-semibold text-punti-text whitespace-pre-wrap leading-relaxed">
+                  <div className="text-lg sm:text-2xl text-punti-text whitespace-pre-wrap leading-relaxed">
                     {current?.answer ?? ""}
                   </div>
                 </div>
